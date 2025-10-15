@@ -9,11 +9,15 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct Editor {
     should_quit: bool,
+    cursor_position: Position,
 }
 
 impl Editor {
     pub const fn default() -> Self {
-        Self { should_quit: false }
+        Self {
+            should_quit: false,
+            cursor_position: Position { x: 0, y: 0 },
+        }
     }
 
     pub fn run(&mut self) {
@@ -44,6 +48,10 @@ impl Editor {
                 Char('q') if *modifiers == KeyModifiers::CONTROL => {
                     self.should_quit = true;
                 }
+                Char('h') => self.move_cursor(Direction::Left).unwrap(),
+                Char('j') => self.move_cursor(Direction::Down).unwrap(),
+                Char('k') => self.move_cursor(Direction::Up).unwrap(),
+                Char('l') => self.move_cursor(Direction::Right).unwrap(),
                 _ => (),
             }
         }
@@ -56,7 +64,7 @@ impl Editor {
             Terminal::print("Goodbye.\r\n")?;
         } else {
             Self::draw_rows()?;
-            Terminal::move_cursor_to(Position { x: 0, y: 0 })?;
+            Terminal::move_cursor_to(self.cursor_position)?;
         }
         Terminal::show_cursor()?;
         Terminal::execute()?;
@@ -101,4 +109,37 @@ impl Editor {
         }
         Ok(())
     }
+
+    fn move_cursor(&mut self, direction: Direction) -> Result<(), Error> {
+        match direction {
+            Direction::Left => {
+                if self.cursor_position.x > 0 {
+                    self.cursor_position.x = self.cursor_position.x - 1;
+                }
+            }
+            Direction::Down => {
+                if self.cursor_position.y < Terminal::size()?.height {
+                    self.cursor_position.y = self.cursor_position.y + 1;
+                }
+            }
+            Direction::Up => {
+                if self.cursor_position.y > 0 {
+                    self.cursor_position.y = self.cursor_position.y - 1;
+                }
+            }
+            Direction::Right => {
+                if self.cursor_position.x < Terminal::size()?.width {
+                    self.cursor_position.x = self.cursor_position.x + 1;
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
 }
